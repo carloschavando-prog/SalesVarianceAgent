@@ -134,6 +134,33 @@ def transform_booking(b: dict) -> dict:
     }
 
 
+def _extract_game_amounts(e: dict) -> dict:
+    """Extract per-game revenue from category_totals (Tripleseat API field)."""
+    games = {
+        "bowling_amount": 0.0,
+        "mini_golf_amount": 0.0,
+        "darts_amount": 0.0,
+        "shuffle_board_amount": 0.0,
+        "pool_amount": 0.0,
+    }
+    for ct in (e.get("category_totals") or []):
+        name  = (ct.get("name") or "").lower()
+        total = float(ct.get("total") or 0)
+        if not total:
+            continue
+        if "bowling" in name:
+            games["bowling_amount"] += total
+        elif "mini golf" in name or "minigolf" in name:
+            games["mini_golf_amount"] += total
+        elif "dart" in name:
+            games["darts_amount"] += total
+        elif "shuffle" in name:
+            games["shuffle_board_amount"] += total
+        elif "pool" in name or "billiard" in name:
+            games["pool_amount"] += total
+    return {k: round(v, 2) if v else None for k, v in games.items()}
+
+
 def _compute_events_amount(e: dict) -> float:
     """
     Sum booking fees (from billing_totals) and extra-hour charges
@@ -157,6 +184,7 @@ def transform_event(e: dict) -> dict:
 
     food, bev, method = compute_food_bev(e)
     events_amt = _compute_events_amount(e)
+    game_amts  = _extract_game_amounts(e)
 
     return {
         "id":                     e["id"],
@@ -184,6 +212,11 @@ def transform_event(e: dict) -> dict:
         "beverage_amount":        bev  if bev  else None,
         "events_amount":          events_amt,
         "split_method":           method,
+        "bowling_amount":         game_amts["bowling_amount"],
+        "mini_golf_amount":       game_amts["mini_golf_amount"],
+        "darts_amount":           game_amts["darts_amount"],
+        "shuffle_board_amount":   game_amts["shuffle_board_amount"],
+        "pool_amount":            game_amts["pool_amount"],
         "contact_id":             _int(e.get("contact_id")),
         "account_id":             _int(e.get("account_id")),
         "location_id":            _int(e.get("location_id")),
