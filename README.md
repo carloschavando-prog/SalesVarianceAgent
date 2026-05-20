@@ -21,6 +21,7 @@ GoTab_Product_Mix/
   api/
     daily_fetch.py    # Vercel serverless function — GoTab fetch + Supabase write
   vercel.json         # Cron schedule (4 AM EST = 9 AM UTC)
+  pyproject.toml      # Vercel Python entrypoint + project metadata (required by uv)
   requirements.txt    # No third-party dependencies
   README.md
 ```
@@ -103,10 +104,11 @@ git push -u origin main
 
 ## Manual Trigger
 
-You can trigger the function manually at any time by visiting:
+Trigger the function from Terminal (browser will return `Unauthorized` due to the `CRON_SECRET` check):
 
-```
-https://your-vercel-domain.vercel.app/api/daily_fetch
+```bash
+curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" \
+  https://go-tab-product-mix.vercel.app/api/daily_fetch
 ```
 
 You'll get a JSON response:
