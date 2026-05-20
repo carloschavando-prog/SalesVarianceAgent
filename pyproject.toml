@@ -1,0 +1,2 @@
+[tool.vercel]
+entrypoint = "api.daily_fetch:handler"
