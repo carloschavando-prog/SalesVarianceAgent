@@ -129,12 +129,21 @@ def _fetch(start: date, end: date) -> dict:
             by_date[d] = dict(_ZERO)
         by_date[d][bk] = round(by_date[d][bk] + amt, 2)
 
-    for row in _supa_paged(
-        f"/ts_events?event_date=gte.{start}&event_date=lte.{end}"
-        f"&deleted_at=is.null"
-        f"&select=event_date,food_amount,beverage_amount,events_amount,"
-        f"bowling_amount,mini_golf_amount,darts_amount,shuffle_board_amount,pool_amount"
-    ):
+    # Try with per-game columns; fall back if revenue_schema.sql hasn't been run yet
+    try:
+        ts_rows = _supa_paged(
+            f"/ts_events?event_date=gte.{start}&event_date=lte.{end}"
+            f"&deleted_at=is.null"
+            f"&select=event_date,food_amount,beverage_amount,events_amount,"
+            f"bowling_amount,mini_golf_amount,darts_amount,shuffle_board_amount,pool_amount"
+        )
+    except Exception:
+        ts_rows = _supa_paged(
+            f"/ts_events?event_date=gte.{start}&event_date=lte.{end}"
+            f"&deleted_at=is.null"
+            f"&select=event_date,food_amount,beverage_amount,events_amount"
+        )
+    for row in ts_rows:
         d = row["event_date"]
         if d not in by_date:
             by_date[d] = dict(_ZERO)
