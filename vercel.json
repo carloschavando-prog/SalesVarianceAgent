@@ -11,7 +11,7 @@
     {
       "path": "/api/revenue_report",
       "schedule": "0 13 * * *"
-    }
+    },
     {
       "path": "/api/sheets_report",
       "schedule": "0 13 * * *"
