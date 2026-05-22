@@ -371,8 +371,6 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
     width: 100%;
     border-collapse: collapse;
     background: #fff;
-    border-radius: 8px;
-    overflow: hidden;
     box-shadow: 0 1px 4px rgba(0,0,0,.12);
   }}
 
@@ -388,6 +386,7 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
     white-space: nowrap;
     position: sticky;
     top: 45px;
+    z-index: 10;
   }}
 
   thead th:first-child,
