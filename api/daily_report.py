@@ -222,7 +222,7 @@ def _build_rows(today: date, actuals: dict, ly: dict) -> list:
             w_end   = w_start + timedelta(days=6)
             rows.append({
                 "_type": "week_hdr",
-                "label": f"Week {week} — {w_start.strftime('%-m/%-d')} to {w_end.strftime('%-m/%-d')}",
+                "label": f"Period {period}  ·  Week {week}  —  {w_start.strftime('%-m/%-d/%Y')} to {w_end.strftime('%-m/%-d/%Y')}",
             })
 
             week_data = []
@@ -342,41 +342,44 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
 <style>
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
-  body {{
+  html, body {{
+    height: 100%;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 13px;
     background: #f0f2f5;
     color: #1a1a2e;
+    overflow: hidden;
   }}
 
   header {{
-    background: #0d2547;
+    background: #1b4332;
     color: #fff;
     padding: 14px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    height: 52px;
     box-shadow: 0 2px 8px rgba(0,0,0,.4);
+    flex-shrink: 0;
   }}
 
   header h1 {{ font-size: 16px; font-weight: 600; letter-spacing: .5px; }}
   header span {{ font-size: 12px; opacity: .7; }}
 
-  .wrap {{ padding: 20px; }}
-  .table-scroll {{ overflow-x: auto; }}
+  .table-scroll {{
+    height: calc(100vh - 52px);
+    overflow: auto;
+    padding: 0;
+  }}
 
   table {{
     width: 100%;
     border-collapse: collapse;
     background: #fff;
-    box-shadow: 0 1px 4px rgba(0,0,0,.12);
   }}
 
   thead th {{
-    background: #203864;
+    background: #2d6a4f;
     color: #fff;
     font-weight: 600;
     font-size: 11px;
@@ -386,7 +389,7 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
     text-align: right;
     white-space: nowrap;
     position: sticky;
-    top: 52px;
+    top: 0;
     z-index: 10;
   }}
 
@@ -403,12 +406,12 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
   td:first-child,
   td:nth-child(2) {{ text-align: left; }}
 
-  tr.data:hover {{ background: #f7f9ff; }}
+  tr.data:hover {{ background: #f2faf5; }}
 
   tr.future td {{ color: #aaa; background: #fafafa; }}
 
   tr.period-hdr td {{
-    background: #0d2547;
+    background: #0d2b1e;
     color: #fff;
     font-weight: 700;
     font-size: 12px;
@@ -417,7 +420,7 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
   }}
 
   tr.week-hdr td {{
-    background: #4472c4;
+    background: #40916c;
     color: #fff;
     font-weight: 600;
     font-size: 11px;
@@ -425,16 +428,16 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
   }}
 
   tr.week-sub td {{
-    background: #dde8f5;
+    background: #d8f3dc;
     font-weight: 700;
-    border-top: 1px solid #b8d0ea;
+    border-top: 1px solid #95d5a8;
   }}
 
   tr.period-tot td {{
-    background: #bdd7ee;
+    background: #b7e4c7;
     font-weight: 700;
     font-size: 13px;
-    border-top: 2px solid #8ab4d8;
+    border-top: 2px solid #74c69d;
   }}
 
   .pos {{ color: #006100; font-weight: 600; }}
@@ -445,6 +448,7 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
     padding: 12px;
     font-size: 11px;
     color: #888;
+    background: #fff;
   }}
 </style>
 </head>
@@ -453,7 +457,6 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
   <h1>On Par Entertainment — Sales Variance</h1>
   <span>Period {cur_period} &nbsp;·&nbsp; As of {today.strftime('%B %-d, %Y')} &nbsp;·&nbsp; Refreshes every 5 min</span>
 </header>
-<div class="wrap">
 <div class="table-scroll">
 <table>
   <thead>
@@ -469,7 +472,6 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
 {table_rows}
   </tbody>
 </table>
-</div>
 <p class="updated">Data as of {today.strftime('%B %-d, %Y')} &nbsp;·&nbsp; LY = same fiscal day FY2025 (364-day offset)</p>
 </div>
 </body>
