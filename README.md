@@ -12,24 +12,30 @@ serves a live HTML sales variance report at a password-protected URL.
 https://sales-variance-agent.vercel.app/api/daily_report?key=4464
 ```
 
-- Covers **P1 FY2026 (12/29/2025) through end of current fiscal period**
-- Columns: Date | Day | Food | Bev | Games | Karaoke | Events | Other | Total | LY Total | +/- $ | +/- %
-- **LY Total** = same fiscal day 364 days prior (FY2025 equivalent)
+- **Year tabs:** FY2026 · FY2025 · FY2024 · FY2023 (partial — GoTab data starts Oct 19, 2023)
+- **Layout:** Newest period/week at top, scroll down for older data
+- **Columns:** Date | Day | Food | Bev | Games | Karaoke | Events | Other | Total | LY Total | +/- $ | +/- %
+- **LY Total** = same fiscal day 364 days prior (identical fiscal position, prior year)
 - Red = below last year · Green = above last year
+- Header row frozen — stays visible while scrolling
 - Auto-refreshes every 5 minutes
-- Bookmark-friendly — no login required, just the URL with the key
+- Password: `4464` (passed as `?key=4464` in URL)
 
 ---
 
 ## Fiscal Calendar
 
-- **FY2026 starts:** Monday, December 29, 2025
-- **FY2025 starts:** Monday, December 30, 2024 (364 days / 52 weeks earlier)
-- **Quarter pattern:** 5-4-4 (Periods 1, 4, 7, 10 = 5 weeks · all others = 4 weeks)
-- **P6 FY2026:** June 1–28, 2026
+**5-4-4 quarter pattern.** Periods 1, 4, 7, 10 = 5 weeks. All others = 4 weeks.
+
+| FY | Start Date | End Date |
+|----|-----------|---------|
+| FY2023 | Jan 2, 2023 | Dec 31, 2023 |
+| FY2024 | Jan 1, 2024 | Dec 29, 2024 |
+| FY2025 | Dec 30, 2024 | Dec 28, 2025 |
+| FY2026 | Dec 29, 2025 | Dec 27, 2026 |
 
 | Period | Weeks | FY2026 Dates |
-|--------|-------|--------------|
+|--------|-------|-------------|
 | P1 | 5 | Dec 29, 2025 – Feb 1, 2026 |
 | P2 | 4 | Feb 2 – Mar 1, 2026 |
 | P3 | 4 | Mar 2 – Mar 29, 2026 |
@@ -49,8 +55,8 @@ https://sales-variance-agent.vercel.app/api/daily_report?key=4464
 
 ### GoTab → Report Buckets
 
-| Report Column | GoTab Categories |
-|---------------|-----------------|
+| Column | GoTab Categories |
+|--------|----------------|
 | **Food** | Chicken. / Dessert / Event Food / Extra Sauces and Cheese Dips / Fry Platters / Half Pound Burgers / Legacy Menu Items / Pizza and Flatbreads / Pretzels / Tacos / Tater Kegs / Wraps |
 | **Bev** | Beverage / Soda Pop / Wine |
 | **Games** | Entertainment (all products: Mini Golf / Bowling / Darts / Shuffle Board / Pool Table) |
@@ -59,14 +65,14 @@ https://sales-variance-agent.vercel.app/api/daily_report?key=4464
 
 ### Tripleseat → Report Buckets
 
-| Report Column | Tripleseat Field |
-|---------------|-----------------|
+| Column | Tripleseat Field |
+|--------|----------------|
 | **Food** | `food_amount` (split from BEO document) |
 | **Bev** | `beverage_amount` (split from BEO document) |
 | **Events** | `events_amount` (booking fees + extra hours) |
 | **Games** | `bowling_amount` + `mini_golf_amount` + `darts_amount` + `shuffle_board_amount` + `pool_amount` |
 
-> Note: GoTab EVENTS column is always $0 — events revenue comes from Tripleseat only.
+> GoTab EVENTS column is always $0 — events revenue comes from Tripleseat only.
 
 ---
 
@@ -74,17 +80,16 @@ https://sales-variance-agent.vercel.app/api/daily_report?key=4464
 
 ```
 GoTab API
-    └── daily_fetch.py (5 AM ET)
+    └── daily_fetch.py  (5 AM ET daily)
             └── sales table (Supabase)
-                    └── daily_report.py ──→ HTML page (live, on-demand)
-Tripleseat API
-    └── tripleseat_fetch.py (7 AM ET)
+                    └──╮
+Tripleseat API          ├── daily_report.py ──→ Live HTML report (on-demand)
+    └── tripleseat_fetch.py  (7 AM ET daily)
             └── ts_events table (Supabase)
-
-Both tables
-    └── revenue_report.py (9 AM ET)
-            └── daily_revenue table (Supabase)
-                    └── revenue_export.py ──→ Excel .xlsx download
+                    └──╯
+                    └── revenue_report.py  (9 AM ET daily)
+                            └── daily_revenue table (Supabase)
+                                    └── revenue_export.py ──→ Excel .xlsx download
 ```
 
 ---
@@ -94,14 +99,14 @@ Both tables
 ```
 SalesVarianceAgent/
   api/
-    daily_fetch.py          GoTab ledger → sales table (cron 5 AM ET)
-    tripleseat_fetch.py     Tripleseat events → ts_events table (cron 7 AM ET)
-    beo_parser.py           Splits food/bev/events from Tripleseat BEO documents
-    revenue_report.py       Aggregates both sources → daily_revenue table (cron 9 AM ET)
-    revenue_export.py       On-demand Excel export: GET /api/revenue_export?period=6&year=2026
-    daily_report.py         Live HTML variance report: GET /api/daily_report?key=4464
-  revenue_schema.sql        Run once in Supabase — creates daily_revenue table + per-game columns
-  tripleseat_schema.sql     Run once in Supabase — creates ts_bookings, ts_events, ts_leads tables
+    daily_fetch.py          GoTab ledger → sales table          (cron 5 AM ET)
+    tripleseat_fetch.py     Tripleseat events → ts_events table  (cron 7 AM ET)
+    beo_parser.py           Splits food/bev/events from BEO documents
+    revenue_report.py       Aggregates both → daily_revenue table (cron 9 AM ET)
+    revenue_export.py       On-demand Excel export
+    daily_report.py         Live HTML variance report
+  revenue_schema.sql        Run once in Supabase — creates daily_revenue + per-game columns
+  tripleseat_schema.sql     Run once in Supabase — creates ts_bookings, ts_events, ts_leads
   vercel.json               Cron schedules
   pyproject.toml
   requirements.txt
@@ -114,9 +119,11 @@ SalesVarianceAgent/
 
 | Endpoint | UTC | ET | Purpose |
 |----------|-----|----|---------|
-| `/api/daily_fetch` | `0 9 * * *` | 5:00 AM | Pull GoTab sales |
-| `/api/tripleseat_fetch` | `0 11 * * *` | 7:00 AM | Pull Tripleseat events |
-| `/api/revenue_report` | `0 13 * * *` | 9:00 AM | Aggregate → daily_revenue |
+| `/api/daily_fetch` | `0 9 * * *` | 5:00 AM | Pull GoTab sales into `sales` table |
+| `/api/tripleseat_fetch` | `0 11 * * *` | 7:00 AM | Pull Tripleseat events into `ts_events` |
+| `/api/revenue_report` | `0 13 * * *` | 9:00 AM | Aggregate both → `daily_revenue` table |
+
+> `/api/daily_report` is on-demand only (no cron) — it queries Supabase live each page load.
 
 ---
 
@@ -140,16 +147,25 @@ Set in **Vercel → SalesVarianceAgent → Settings → Environment Variables**:
 
 ## Supabase Setup (one-time)
 
-Two SQL files must be run once in the **Supabase SQL Editor** (supabase.com → project → SQL Editor):
+Run these two SQL files in **Supabase → SQL Editor** before the first nightly sync:
 
 1. `tripleseat_schema.sql` — creates `ts_bookings`, `ts_events`, `ts_leads` tables
 2. `revenue_schema.sql` — creates `daily_revenue` table and adds per-game columns to `ts_events`
 
 ---
 
-## Manual Triggers
+## Data Range in Supabase
 
-Trigger any cron endpoint manually with curl (replace with your actual domain and secret):
+| Table | Earliest Date | Latest Date |
+|-------|--------------|------------|
+| `sales` (GoTab) | Oct 19, 2023 | present |
+| `ts_events` (Tripleseat) | Nov 10, 2023 | present |
+
+FY2023 tab shows partial data (mid-P4 onward). FY2024, FY2025, FY2026 are complete.
+
+---
+
+## Manual Triggers
 
 ```bash
 # Pull yesterday's GoTab sales
@@ -160,7 +176,7 @@ curl -s -H "Authorization: Bearer onpar-cron-2026-xK9mP" \
 curl -s -H "Authorization: Bearer onpar-cron-2026-xK9mP" \
   https://sales-variance-agent.vercel.app/api/tripleseat_fetch
 
-# Aggregate into daily_revenue (or backfill a specific date)
+# Aggregate into daily_revenue (supports ?date=YYYY-MM-DD for backfill)
 curl -s -H "Authorization: Bearer onpar-cron-2026-xK9mP" \
   "https://sales-variance-agent.vercel.app/api/revenue_report?date=2026-05-01"
 
@@ -173,14 +189,18 @@ curl -o report_p6.xlsx \
 
 ## Deployment
 
-1. Push to GitHub: `github.com/carloschavando-prog/SalesVarianceAgent`
-2. Vercel auto-deploys on every push to `main`
-3. Project URL: `https://sales-variance-agent.vercel.app`
+- **GitHub:** `https://github.com/carloschavando-prog/SalesVarianceAgent`
+- **Vercel:** Auto-deploys on every push to `main`
+- **Live URL:** `https://sales-variance-agent.vercel.app`
 
 ---
 
 ## Backups
 
-- **GitHub:** `https://github.com/carloschavando-prog/SalesVarianceAgent`
-- **Local (visible):** `~/Documents/SalesVarianceAgent/`
-- **Local (hidden):** `~/.SalesVarianceAgent/`
+| Location | Path |
+|----------|------|
+| GitHub | `https://github.com/carloschavando-prog/SalesVarianceAgent` |
+| Local visible | `~/Documents/SalesVarianceAgent/` |
+| Local hidden | `~/.SalesVarianceAgent/` |
+
+To view hidden folder in Finder: **Cmd + Shift + .** (toggles hidden files)
