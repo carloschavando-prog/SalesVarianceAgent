@@ -365,7 +365,8 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
   header h1 {{ font-size: 16px; font-weight: 600; letter-spacing: .5px; }}
   header span {{ font-size: 12px; opacity: .7; }}
 
-  .wrap {{ padding: 20px; overflow-x: auto; }}
+  .wrap {{ padding: 20px; }}
+  .table-scroll {{ overflow-x: auto; }}
 
   table {{
     width: 100%;
@@ -385,7 +386,7 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
     text-align: right;
     white-space: nowrap;
     position: sticky;
-    top: 45px;
+    top: 52px;
     z-index: 10;
   }}
 
@@ -453,6 +454,7 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
   <span>Period {cur_period} &nbsp;·&nbsp; As of {today.strftime('%B %-d, %Y')} &nbsp;·&nbsp; Refreshes every 5 min</span>
 </header>
 <div class="wrap">
+<div class="table-scroll">
 <table>
   <thead>
     <tr>
@@ -467,6 +469,7 @@ def _render_html(rows: list, today: date, cur_period: int) -> str:
 {table_rows}
   </tbody>
 </table>
+</div>
 <p class="updated">Data as of {today.strftime('%B %-d, %Y')} &nbsp;·&nbsp; LY = same fiscal day FY2025 (364-day offset)</p>
 </div>
 </body>
