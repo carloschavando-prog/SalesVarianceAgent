@@ -22,6 +22,13 @@ from forecast_agent import (
     push_to_supabase, DEFAULT_FORECAST_DAYS, DEFAULT_HISTORY_WEEKS,
 )
 
+# Best-effort status reporting to the Agent Control Board (never breaks this agent).
+try:
+    from control_board import report
+except Exception:
+    def report(*_a, **_k):
+        return
+
 CRON_SECRET = os.getenv("CRON_SECRET", "")
 
 
@@ -52,12 +59,16 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(b"Unauthorized")
             return
         try:
+            report("forecast", "started", current_task="Scheduled forecast push")
             result = run_push()
+            report("forecast", "finished",
+                   output=f"Forecast push — {result.get('rows_written')} rows through {result.get('history_through')}")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(result).encode())
         except Exception as e:
+            report("forecast", "failed", message=f"Forecast push: {e}")
             self.send_response(500)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

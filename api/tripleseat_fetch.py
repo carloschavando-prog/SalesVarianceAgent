@@ -9,6 +9,13 @@ import os
 
 from beo_parser import compute_food_bev
 
+# Best-effort status reporting to the Agent Control Board (never breaks this agent).
+try:
+    from control_board import report
+except Exception:
+    def report(*_a, **_k):
+        return
+
 # --- Config ---
 TS_TOKEN_URL   = "https://api.tripleseat.com/oauth2/token"
 TS_API_BASE    = "https://api.tripleseat.com/v1"
@@ -324,12 +331,15 @@ class handler(BaseHTTPRequestHandler):
             return
 
         try:
+            report("sales", "started", current_task="Tripleseat fetch")
             result = run()
+            report("sales", "finished", output=f"Tripleseat fetch — {result}")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"status": result}).encode())
         except Exception as e:
+            report("sales", "failed", message=f"Tripleseat fetch: {e}")
             self.send_response(500)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

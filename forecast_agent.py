@@ -822,4 +822,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # Best-effort status reporting to the Agent Control Board (never breaks the run).
+    try:
+        from control_board import report
+    except Exception:
+        def report(*_a, **_k):
+            return
+    try:
+        report("forecast", "started", current_task="Manual forecast run")
+        main()
+        report("forecast", "finished", output="Manual forecast run complete")
+    except Exception as e:
+        report("forecast", "failed", message=f"Manual forecast run: {e}")
+        raise

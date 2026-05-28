@@ -6,6 +6,13 @@ from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler
 import os
 
+# Best-effort status reporting to the Agent Control Board (never breaks this agent).
+try:
+    from control_board import report
+except Exception:
+    def report(*_a, **_k):
+        return
+
 # --- Config from environment variables ---
 GOTAB_AUTH_URL    = "https://gotab.io/api/oauth/token"
 GOTAB_GRAPH_URL   = "https://gotab.io/api/graph"
@@ -248,12 +255,15 @@ class handler(BaseHTTPRequestHandler):
 
         target_date = (date.today() - timedelta(days=1)).isoformat()
         try:
+            report("sales", "started", current_task="GoTab daily fetch")
             result = run(target_date)
+            report("sales", "finished", output=f"GoTab daily fetch — {result}")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"status": result}).encode())
         except Exception as e:
+            report("sales", "failed", message=f"GoTab daily fetch: {e}")
             self.send_response(500)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

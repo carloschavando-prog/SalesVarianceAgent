@@ -14,6 +14,13 @@ from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler
 import os
 
+# Best-effort status reporting to the Agent Control Board (never breaks this agent).
+try:
+    from control_board import report
+except Exception:
+    def report(*_a, **_k):
+        return
+
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
 CRON_SECRET  = os.environ.get("CRON_SECRET", "")
@@ -193,12 +200,15 @@ class handler(BaseHTTPRequestHandler):
         )
 
         try:
+            report("sales", "started", current_task="Revenue report rollup")
             result = run(target_date)
+            report("sales", "finished", output=f"Revenue rollup — {result}")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"status": result}).encode())
         except Exception as e:
+            report("sales", "failed", message=f"Revenue rollup: {e}")
             self.send_response(500)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
