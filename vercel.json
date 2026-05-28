@@ -1,4 +1,8 @@
 {
+  "functions": {
+    "api/forecast_report.py": { "maxDuration": 60 },
+    "api/forecast_push.py":   { "maxDuration": 60 }
+  },
   "crons": [
     {
       "path": "/api/daily_fetch",
