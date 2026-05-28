@@ -15,6 +15,18 @@
     {
       "path": "/api/revenue_report",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/forecast_push",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/weather_fetch",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/tab_metrics_fetch",
+      "schedule": "0 9 * * *"
     }
   ]
 }
