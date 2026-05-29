@@ -76,6 +76,26 @@ https://sales-variance-agent.vercel.app/api/daily_report?key=4464
 > GoTab EVENTS column is always $0 — events revenue comes from Tripleseat only.
 > `karaoke_amount` column added to `ts_events` 2026-05-29 — backfilled for 5/21 (Caresource event, $39).
 
+### Tripleseat Event Status Filter
+
+Only the following statuses are included in all revenue calculations (explicit allowlist):
+
+| Status | Included? |
+|--------|-----------|
+| `DEFINITE` | ✅ Yes |
+| `CLOSED` | ✅ Yes |
+| `TENTATIVE` | ✅ Yes |
+| `LOST` | ❌ No |
+| `PROSPECT` | ❌ No |
+| `PENDING_AUTH` | ❌ No |
+| `CANCELLED` | ❌ No |
+
+Filter applied in both `daily_report.py` and `revenue_report.py`:
+```
+&deleted_at=is.null&status=in.(DEFINITE,CLOSED,TENTATIVE)
+```
+This is an **allowlist**, not a blocklist — any new/unknown Tripleseat status is excluded by default.
+
 ---
 
 ## Architecture
