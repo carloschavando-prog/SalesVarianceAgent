@@ -122,7 +122,8 @@ def _aggregate_gotab(target_date: str) -> dict:
 
 
 _TS_GAME_COLS = (
-    "bowling_amount,mini_golf_amount,darts_amount,shuffle_board_amount,pool_amount"
+    "bowling_amount,mini_golf_amount,darts_amount,shuffle_board_amount,pool_amount,"
+    "karaoke_amount"
 )
 
 
@@ -155,6 +156,7 @@ def _aggregate_tripleseat(target_date: str) -> dict:
             totals["darts"]         = round(totals["darts"]         + float(row.get("darts_amount")         or 0), 2)
             totals["shuffle_board"] = round(totals["shuffle_board"] + float(row.get("shuffle_board_amount") or 0), 2)
             totals["pool"]          = round(totals["pool"]          + float(row.get("pool_amount")          or 0), 2)
+            totals["karaoke"]       = round(totals["karaoke"]       + float(row.get("karaoke_amount")       or 0), 2)
     return totals
 
 

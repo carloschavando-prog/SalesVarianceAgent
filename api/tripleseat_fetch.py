@@ -149,6 +149,7 @@ def _extract_game_amounts(e: dict) -> dict:
         "darts_amount": 0.0,
         "shuffle_board_amount": 0.0,
         "pool_amount": 0.0,
+        "karaoke_amount": 0.0,
     }
     for ct in (e.get("category_totals") or []):
         name  = (ct.get("name") or "").lower()
@@ -165,6 +166,8 @@ def _extract_game_amounts(e: dict) -> dict:
             games["shuffle_board_amount"] += total
         elif "pool" in name or "billiard" in name:
             games["pool_amount"] += total
+        elif "karaoke" in name:
+            games["karaoke_amount"] += total
     return {k: round(v, 2) if v else None for k, v in games.items()}
 
 
@@ -224,6 +227,7 @@ def transform_event(e: dict) -> dict:
         "darts_amount":           game_amts["darts_amount"],
         "shuffle_board_amount":   game_amts["shuffle_board_amount"],
         "pool_amount":            game_amts["pool_amount"],
+        "karaoke_amount":         game_amts["karaoke_amount"],
         "contact_id":             _int(e.get("contact_id")),
         "account_id":             _int(e.get("account_id")),
         "location_id":            _int(e.get("location_id")),
@@ -268,11 +272,17 @@ def transform_lead(l: dict) -> dict:
 # --- Supabase helpers ---
 
 def supa_upsert(table: str, rows: list) -> None:
-    """Upsert rows in chunks; ON CONFLICT updates all columns via merge-duplicates."""
-    for i in range(0, len(rows), UPSERT_CHUNK):
-        chunk = rows[i : i + UPSERT_CHUNK]
-        data  = json.dumps(chunk).encode()
-        req   = urllib.request.Request(
+    """Upsert rows in chunks; ON CONFLICT updates all columns via merge-duplicates.
+
+    If a column doesn't exist yet (Postgres error 42703), strips that column from
+    all rows and retries once — allows forward-compatible deploys before a schema
+    migration has been applied.
+    """
+    _UNKNOWN_COL_CODE = "42703"
+
+    def _do_upsert(chunk: list) -> None:
+        data = json.dumps(chunk).encode()
+        req  = urllib.request.Request(
             f"{SUPABASE_URL}/rest/v1/{table}",
             data=data,
             headers={
@@ -283,8 +293,34 @@ def supa_upsert(table: str, rows: list) -> None:
             },
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=30) as r:
-            r.read()  # drain
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                r.read()
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            if _UNKNOWN_COL_CODE in body:
+                # Schema migration not yet applied — strip unknown columns and retry
+                import json as _json
+                err_obj = _json.loads(body) if body.startswith("{") else {}
+                msg = err_obj.get("message", "")
+                # Extract the offending column name from "column X does not exist"
+                bad_col = None
+                if "column" in msg and "does not exist" in msg:
+                    parts = msg.split('"')
+                    if len(parts) >= 2:
+                        bad_col = parts[1]
+                    else:
+                        # fallback: strip known new columns
+                        bad_col = "karaoke_amount"
+                if bad_col:
+                    clean = [{k: v for k, v in row.items() if k != bad_col}
+                             for row in chunk]
+                    _do_upsert(clean)
+                    return
+            raise
+
+    for i in range(0, len(rows), UPSERT_CHUNK):
+        _do_upsert(rows[i : i + UPSERT_CHUNK])
 
 
 # --- Main sync logic ---

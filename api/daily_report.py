@@ -158,7 +158,8 @@ def _fetch(start: date, end: date) -> dict:
             f"/ts_events?event_date=gte.{start}&event_date=lte.{end}"
             f"&deleted_at=is.null&status=in.(DEFINITE,CLOSED,TENTATIVE)"
             f"&select=event_date,food_amount,beverage_amount,events_amount,"
-            f"bowling_amount,mini_golf_amount,darts_amount,shuffle_board_amount,pool_amount"
+            f"bowling_amount,mini_golf_amount,darts_amount,shuffle_board_amount,"
+            f"pool_amount,karaoke_amount"
         )
     except Exception:
         ts_rows = _supa_paged(
@@ -171,9 +172,10 @@ def _fetch(start: date, end: date) -> dict:
         d = row["event_date"]
         if d not in by_date:
             by_date[d] = dict(_ZERO)
-        by_date[d]["food"]   = round(by_date[d]["food"]   + float(row.get("food_amount")     or 0), 2)
-        by_date[d]["bev"]    = round(by_date[d]["bev"]    + float(row.get("beverage_amount") or 0), 2)
-        by_date[d]["events"] = round(by_date[d]["events"] + float(row.get("events_amount")   or 0), 2)
+        by_date[d]["food"]    = round(by_date[d]["food"]    + float(row.get("food_amount")     or 0), 2)
+        by_date[d]["bev"]     = round(by_date[d]["bev"]     + float(row.get("beverage_amount") or 0), 2)
+        by_date[d]["events"]  = round(by_date[d]["events"]  + float(row.get("events_amount")   or 0), 2)
+        by_date[d]["karaoke"] = round(by_date[d]["karaoke"] + float(row.get("karaoke_amount")  or 0), 2)
         game = sum(float(row.get(c) or 0) for c in (
             "bowling_amount", "mini_golf_amount", "darts_amount",
             "shuffle_board_amount", "pool_amount",
