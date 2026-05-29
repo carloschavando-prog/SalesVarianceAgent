@@ -156,14 +156,14 @@ def _fetch(start: date, end: date) -> dict:
     try:
         ts_rows = _supa_paged(
             f"/ts_events?event_date=gte.{start}&event_date=lte.{end}"
-            f"&deleted_at=is.null&status=not.in.(LOST,CANCELLED)"
+            f"&deleted_at=is.null&status=in.(DEFINITE,CLOSED,TENTATIVE)"
             f"&select=event_date,food_amount,beverage_amount,events_amount,"
             f"bowling_amount,mini_golf_amount,darts_amount,shuffle_board_amount,pool_amount"
         )
     except Exception:
         ts_rows = _supa_paged(
             f"/ts_events?event_date=gte.{start}&event_date=lte.{end}"
-            f"&deleted_at=is.null&status=not.in.(LOST,CANCELLED)"
+            f"&deleted_at=is.null&status=in.(DEFINITE,CLOSED,TENTATIVE)"
             f"&select=event_date,food_amount,beverage_amount,events_amount"
         )
 

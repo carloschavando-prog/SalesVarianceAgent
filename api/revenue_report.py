@@ -132,14 +132,14 @@ def _aggregate_tripleseat(target_date: str) -> dict:
     try:
         rows = _supa_get(
             f"/ts_events?event_date=eq.{target_date}"
-            f"&deleted_at=is.null&status=not.in.(LOST,CANCELLED)"
+            f"&deleted_at=is.null&status=in.(DEFINITE,CLOSED,TENTATIVE)"
             f"&select=food_amount,beverage_amount,events_amount,{_TS_GAME_COLS}"
         )
         has_game_cols = True
     except Exception:
         rows = _supa_get(
             f"/ts_events?event_date=eq.{target_date}"
-            f"&deleted_at=is.null&status=not.in.(LOST,CANCELLED)"
+            f"&deleted_at=is.null&status=in.(DEFINITE,CLOSED,TENTATIVE)"
             f"&select=food_amount,beverage_amount,events_amount"
         )
         has_game_cols = False
