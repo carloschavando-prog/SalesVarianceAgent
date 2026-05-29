@@ -71,8 +71,10 @@ https://sales-variance-agent.vercel.app/api/daily_report?key=4464
 | **Bev** | `beverage_amount` (split from BEO document) |
 | **Events** | `events_amount` (booking fees + extra hours) |
 | **Games** | `bowling_amount` + `mini_golf_amount` + `darts_amount` + `shuffle_board_amount` + `pool_amount` |
+| **Karaoke** | `karaoke_amount` (extracted from `category_totals` matching "karaoke") |
 
 > GoTab EVENTS column is always $0 — events revenue comes from Tripleseat only.
+> `karaoke_amount` column added to `ts_events` 2026-05-29 — backfilled for 5/21 (Caresource event, $39).
 
 ---
 
@@ -143,14 +145,23 @@ Set in **Vercel → SalesVarianceAgent → Settings → Environment Variables**:
 | `TS_CLIENT_ID` | Tripleseat OAuth2 application UID |
 | `TS_CLIENT_SECRET` | Tripleseat OAuth2 application secret |
 
+> **CRON_SECRET** value is `onpar-cron-2026-xK9mP` — protects all cron endpoints.
+> The `supa_upsert()` in `tripleseat_fetch.py` has a graceful fallback: if a column doesn't
+> exist yet (Postgres 42703), it strips that column and retries, so deploys are safe before
+> schema migrations run.
+
 ---
 
 ## Supabase Setup (one-time)
 
-Run these two SQL files in **Supabase → SQL Editor** before the first nightly sync:
+Run these SQL files in **Supabase → SQL Editor** before the first nightly sync:
 
 1. `tripleseat_schema.sql` — creates `ts_bookings`, `ts_events`, `ts_leads` tables
 2. `revenue_schema.sql` — creates `daily_revenue` table and adds per-game columns to `ts_events`
+3. Add `karaoke_amount` column (already applied 2026-05-29):
+   ```sql
+   ALTER TABLE ts_events ADD COLUMN IF NOT EXISTS karaoke_amount numeric;
+   ```
 
 ---
 
