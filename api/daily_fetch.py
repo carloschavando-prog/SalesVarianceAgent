@@ -14,13 +14,16 @@ except Exception:
         return
 
 # --- Config from environment variables ---
+# Use .get() everywhere so the module can always be imported even if an env var
+# is missing — the KeyError will surface at call time with a clear message instead
+# of crashing the Vercel function with "could not import api/daily_fetch".
 GOTAB_AUTH_URL    = "https://gotab.io/api/oauth/token"
 GOTAB_GRAPH_URL   = "https://gotab.io/api/graph"
 LOCATION_ID       = os.environ.get("GOTAB_LOCATION_ID", "112479")
-API_ACCESS_ID     = os.environ["GOTAB_API_ACCESS_ID"]
-API_ACCESS_SECRET = os.environ["GOTAB_API_ACCESS_SECRET"]
-SUPABASE_URL      = os.environ["SUPABASE_URL"]
-SUPABASE_KEY      = os.environ["SUPABASE_SERVICE_KEY"]
+API_ACCESS_ID     = os.environ.get("GOTAB_API_ACCESS_ID", "")
+API_ACCESS_SECRET = os.environ.get("GOTAB_API_ACCESS_SECRET", "")
+SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY      = os.environ.get("SUPABASE_SERVICE_KEY", "")
 CRON_SECRET       = os.environ.get("CRON_SECRET", "")
 
 UA = (
