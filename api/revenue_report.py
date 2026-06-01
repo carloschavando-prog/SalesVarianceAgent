@@ -89,10 +89,13 @@ def _supa_get(path: str) -> list:
         return json.loads(r.read())
 
 
-def _supa_upsert(table: str, rows: list) -> None:
+def _supa_upsert(table: str, rows: list, on_conflict: str = "") -> None:
+    url  = f"{SUPABASE_URL}/rest/v1/{table}"
+    if on_conflict:
+        url += f"?on_conflict={on_conflict}"
     data = json.dumps(rows).encode()
     req  = urllib.request.Request(
-        f"{SUPABASE_URL}/rest/v1/{table}",
+        url,
         data=data,
         headers={
             "apikey":        SUPABASE_KEY,
@@ -171,7 +174,7 @@ def run(target_date: str) -> str:
         {"report_date": target_date, "source": "gotab",       **gotab_totals},
         {"report_date": target_date, "source": "tripleseat",  **ts_totals},
     ]
-    _supa_upsert("daily_revenue", rows)
+    _supa_upsert("daily_revenue", rows, on_conflict="report_date,source")
 
     gt_total = sum(gotab_totals.values())
     ts_total = sum(ts_totals.values())

@@ -88,9 +88,8 @@ def fetch_ledger_entries(token, fiscal_day):
     entries = []
     offset = 0
     while True:
-        time.sleep(0.4)
         result = gql(token, LEDGER_QUERY, {
-            "locationId": LOCATION_ID,
+            "locationId": int(LOCATION_ID),
             "fiscalDay": fiscal_day,
             "offset": offset,
         })
@@ -101,6 +100,7 @@ def fetch_ledger_entries(token, fiscal_day):
         if len(batch) < 500:
             break
         offset += 500
+        time.sleep(0.2)  # only sleep between pages, not before the first
     return entries
 
 
@@ -186,6 +186,19 @@ def supa_get(path):
         return json.loads(r.read())
 
 
+def _supa_delete(path):
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1{path}",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+        method="DELETE",
+    )
+    with urllib.request.urlopen(req, timeout=15) as r:
+        r.read()
+
+
 def supa_post(path, payload):
     data = json.dumps(payload).encode()
     req = urllib.request.Request(
@@ -204,11 +217,16 @@ def supa_post(path, payload):
 
 # --- Main logic ---
 
-def run(target_date: str) -> str:
-    # Skip if already loaded
+def run(target_date: str, force: bool = False) -> str:
+    # Skip if already loaded — unless force=True (for manual backfill / retry after partial failure)
     existing = supa_get(f"/report_dates?report_date=eq.{target_date}&select=id")
-    if existing:
-        return f"skipped: {target_date} already in database"
+    if existing and not force:
+        # Also verify sales rows actually exist; if not, treat as a failed prior run and reload
+        sales_check = supa_get(f"/sales?report_date=eq.{target_date}&select=id&limit=1")
+        if sales_check:
+            return f"skipped: {target_date} already in database"
+        # report_dates row exists but sales are empty — previous run crashed mid-way; reload
+        force = True
 
     token = get_token()
     entries = fetch_ledger_entries(token, target_date)
@@ -216,8 +234,14 @@ def run(target_date: str) -> str:
         return f"no data: no ledger entries found for {target_date}"
 
     rows = aggregate_entries(entries)
-    rd = supa_post("/report_dates", {"report_date": target_date, "filename": f"api:{target_date}"})
-    report_date_id = rd[0]["id"]
+
+    if force and existing:
+        # Delete stale sales rows before reinserting (report_dates row already exists)
+        report_date_id = existing[0]["id"]
+        _supa_delete(f"/sales?report_date=eq.{target_date}")
+    else:
+        rd = supa_post("/report_dates", {"report_date": target_date, "filename": f"api:{target_date}"})
+        report_date_id = rd[0]["id"]
 
     payload = []
     for r in rows:
@@ -253,10 +277,16 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(b"Unauthorized")
             return
 
-        target_date = (date.today() - timedelta(days=1)).isoformat()
+        from urllib.parse import urlparse, parse_qs
+        qs = parse_qs(urlparse(self.path).query)
+        target_date = (
+            qs["date"][0] if "date" in qs
+            else (date.today() - timedelta(days=1)).isoformat()
+        )
+        force = qs.get("force", ["0"])[0] in ("1", "true", "yes")
         try:
             report("sales", "started", current_task="GoTab daily fetch")
-            result = run(target_date)
+            result = run(target_date, force=force)
             report("sales", "finished", output=f"GoTab daily fetch — {result}")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
