@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
 import os
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 from beo_parser import compute_food_bev
 
 # Best-effort status reporting to the Agent Control Board (never breaks this agent).
