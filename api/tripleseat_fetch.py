@@ -19,10 +19,10 @@ except Exception:
 # --- Config ---
 TS_TOKEN_URL   = "https://api.tripleseat.com/oauth2/token"
 TS_API_BASE    = "https://api.tripleseat.com/v1"
-TS_CLIENT_ID   = os.environ["TS_CLIENT_ID"]
-TS_CLIENT_SECRET = os.environ["TS_CLIENT_SECRET"]
-SUPABASE_URL   = os.environ["SUPABASE_URL"]
-SUPABASE_KEY   = os.environ["SUPABASE_SERVICE_KEY"]
+TS_CLIENT_ID   = os.environ.get("TS_CLIENT_ID", "")
+TS_CLIENT_SECRET = os.environ.get("TS_CLIENT_SECRET", "")
+SUPABASE_URL   = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY   = os.environ.get("SUPABASE_SERVICE_KEY", "")
 CRON_SECRET    = os.environ.get("CRON_SECRET", "")
 
 UPSERT_CHUNK   = 100   # rows per Supabase upsert call

@@ -19,10 +19,10 @@ from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import os
 
-SUPABASE_URL       = os.environ["SUPABASE_URL"]
-SUPABASE_KEY       = os.environ["SUPABASE_SERVICE_KEY"]
+SUPABASE_URL       = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY       = os.environ.get("SUPABASE_SERVICE_KEY", "")
 CRON_SECRET        = os.environ.get("CRON_SECRET", "")
-SEVEN_SHIFTS_TOKEN = os.environ["SEVEN_SHIFTS_TOKEN"]
+SEVEN_SHIFTS_TOKEN = os.environ.get("SEVEN_SHIFTS_TOKEN", "")
 
 COMPANY_ID  = "286488"
 LOCATION_ID = "354876"

@@ -27,8 +27,8 @@ try:
 except ImportError:
     openpyxl = None
 
-SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 CRON_SECRET  = os.environ.get("CRON_SECRET", "")
 
 # ---------------------------------------------------------------------------
