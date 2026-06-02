@@ -226,6 +226,50 @@ curl -o report_p6.xlsx \
 
 ---
 
+## Operations Notes
+
+### Live Report Reads sales + ts_events Directly
+`daily_report.py` queries `sales` and `ts_events` live — it does **not** read from `daily_revenue`.
+Patching `daily_revenue` alone will NOT update the live HTML report. Always patch the source tables (`sales` or `ts_events`) and then rebuild `daily_revenue` separately.
+
+### Adding a Cash or Off-System Sale
+```bash
+# 1. Get the report_date_id for that date
+curl "SUPABASE_URL/rest/v1/report_dates?report_date=eq.YYYY-MM-DD&select=id" -H "apikey: KEY"
+
+# 2. Insert directly into sales
+curl -X POST "SUPABASE_URL/rest/v1/sales" -H "Content-Type: application/json" \
+  -d '{"report_date_id":ID,"report_date":"YYYY-MM-DD","category":"Entertainment",
+       "product":"Mini Golf - Cash","gross_qty":1,"net_qty":1,
+       "gross_sales":170.00,"net_sales":170.00,"is_discount":false}'
+
+# 3. Rebuild daily_revenue for that date
+curl -H "authorization: Bearer CRON_SECRET" "LIVE_URL/api/revenue_report?date=YYYY-MM-DD"
+```
+
+### vercel.json — Do Not Mix Wildcard + Specific File in `functions`
+Vercel rejects `api/*.py` alongside `api/tripleseat_fetch.py` with an `unused_function` build error that blocks the entire deployment. Only list the specific overrides you need:
+```json
+"functions": {
+  "api/tripleseat_fetch.py": { "maxDuration": 300 }
+}
+```
+All other functions default to the Vercel Pro limit (60 s).
+
+### Cron Miss After a Failed Deployment
+If a deployment goes to `ERROR` state, Vercel reverts to the previous `READY` build but the cron for that UTC window can be missed. If a day's data is absent, check the Vercel deployment list first, then trigger the missing cron manually with `?date=YYYY-MM-DD`.
+
+### Tripleseat API — Date Filter Does Not Work on List Endpoint
+`GET /v1/events.json?start_date=X` is ignored — all events are returned sorted by ID. To find recent events go to the **last page** (page 33 as of June 2026). Individual event fetch `GET /v1/events/{id}.json` works reliably.
+
+### Foreign Key Constraint on ts_events
+`ts_events.booking_id` → `ts_bookings.id`. Always upsert the booking first when manually inserting an event.
+
+### GoTab "Reservations" Category
+GoTab "Reservations" = online room deposits (Rex Online platform), not gift cards. Revenue report stores these in the `reservations` column; the Google Sheet manual entry may label them `gift_card` — same money, different label.
+
+---
+
 ## Backups
 
 | Location | Path |
