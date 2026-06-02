@@ -1,8 +1,5 @@
 {
   "functions": {
-    "api/*.py": {
-      "maxDuration": 60
-    },
     "api/tripleseat_fetch.py": {
       "maxDuration": 300
     }
