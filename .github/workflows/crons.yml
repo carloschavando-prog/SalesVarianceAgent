@@ -1,0 +1,93 @@
+name: Daily Cron Jobs
+
+on:
+  schedule:
+    # All times UTC — same schedule as the old vercel.json crons
+    - cron: '0 8 * * *'   # weather_fetch      — 4:00 AM ET
+    - cron: '0 9 * * *'   # daily_fetch         — 5:00 AM ET
+    - cron: '0 10 * * *'  # labor_fetch         — 6:00 AM ET
+    - cron: '0 11 * * *'  # tripleseat_fetch    — 7:00 AM ET
+    - cron: '0 12 * * *'  # forecast_push       — 8:00 AM ET
+    - cron: '0 13 * * *'  # revenue_report      — 9:00 AM ET
+  workflow_dispatch:       # allow manual trigger from GitHub UI
+    inputs:
+      endpoint:
+        description: 'Endpoint to run (e.g. daily_fetch)'
+        required: false
+      date:
+        description: 'Date override YYYY-MM-DD (optional)'
+        required: false
+
+env:
+  BASE_URL: https://sales-variance-agent.vercel.app
+  CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+jobs:
+  weather_fetch:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 8 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger weather_fetch
+        run: |
+          curl -sf -H "authorization: Bearer $CRON_SECRET" \
+            "$BASE_URL/api/weather_fetch" \
+            && echo "weather_fetch OK" || echo "weather_fetch FAILED"
+
+  daily_fetch:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 9 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger daily_fetch
+        run: |
+          DATE_PARAM=""
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            DATE_PARAM="?date=${{ github.event.inputs.date }}"
+          fi
+          curl -sf -H "authorization: Bearer $CRON_SECRET" \
+            "$BASE_URL/api/daily_fetch$DATE_PARAM" \
+            && echo "daily_fetch OK" || echo "daily_fetch FAILED"
+
+  labor_fetch:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger labor_fetch
+        run: |
+          curl -sf -H "authorization: Bearer $CRON_SECRET" \
+            "$BASE_URL/api/labor_fetch" \
+            && echo "labor_fetch OK" || echo "labor_fetch FAILED"
+
+  tripleseat_fetch:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 11 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Trigger tripleseat_fetch
+        run: |
+          curl -sf --max-time 300 -H "authorization: Bearer $CRON_SECRET" \
+            "$BASE_URL/api/tripleseat_fetch" \
+            && echo "tripleseat_fetch OK" || echo "tripleseat_fetch FAILED"
+
+  forecast_push:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 12 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger forecast_push
+        run: |
+          curl -sf -H "authorization: Bearer $CRON_SECRET" \
+            "$BASE_URL/api/forecast_push" \
+            && echo "forecast_push OK" || echo "forecast_push FAILED"
+
+  revenue_report:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 13 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger revenue_report
+        run: |
+          DATE_PARAM=""
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            DATE_PARAM="?date=${{ github.event.inputs.date }}"
+          fi
+          curl -sf -H "authorization: Bearer $CRON_SECRET" \
+            "$BASE_URL/api/revenue_report$DATE_PARAM" \
+            && echo "revenue_report OK" || echo "revenue_report FAILED"

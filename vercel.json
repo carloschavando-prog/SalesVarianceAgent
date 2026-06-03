@@ -3,5 +3,35 @@
     "api/tripleseat_fetch.py": {
       "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/daily_fetch",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/labor_fetch",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/tripleseat_fetch",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/revenue_report",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/forecast_push",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/weather_fetch",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/tab_metrics_fetch",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }
