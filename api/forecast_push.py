@@ -16,10 +16,13 @@ from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from collections import defaultdict
+
 from forecast_agent import (
     fetch_daily_sales, fetch_events, load_weather,
     load_tab_hourly_profiles, build_forecasts,
-    push_to_supabase, DEFAULT_FORECAST_DAYS, DEFAULT_HISTORY_WEEKS,
+    push_to_supabase, supabase_get,
+    DEFAULT_FORECAST_DAYS, DEFAULT_HISTORY_WEEKS, MODEL_VERSION,
 )
 
 # Best-effort status reporting to the Agent Control Board (never breaks this agent).
@@ -32,6 +35,48 @@ except Exception:
 CRON_SECRET = os.getenv("CRON_SECRET", "")
 
 
+def _uplift_summary(results: list) -> dict:
+    """Summarize the event uplift the model computed for this run (pre-write)."""
+    by_day = defaultdict(float)
+    for r in results:
+        u = float(r.get("event_uplift") or 0)
+        if u:
+            by_day[r["forecast_date"]] += u
+    return {
+        "event_days":   len(by_day),
+        "total_uplift": round(sum(by_day.values()), 2),
+        "days": {d: round(v, 2) for d, v in sorted(by_day.items())},
+    }
+
+
+def _verify_stored_uplift(from_date: str) -> dict:
+    """
+    Read back the rows just written (forecast_date >= from_date, current model
+    version) and confirm event_uplift actually persisted to Supabase. This is the
+    round-trip proof that the cron records uplift going forward.
+    """
+    try:
+        rows = supabase_get("forecasts", [
+            ("select",        "forecast_date,event_uplift"),
+            ("forecast_date", f"gte.{from_date}"),
+            ("model_version", f"eq.{MODEL_VERSION}"),
+            ("limit",         5000),
+        ])
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+    by_day = defaultdict(float)
+    for r in rows:
+        u = float(r.get("event_uplift") or 0)
+        if u:
+            by_day[r["forecast_date"]] += u
+    return {
+        "ok":                  True,
+        "rows_read":           len(rows),
+        "stored_event_days":   len(by_day),
+        "stored_total_uplift": round(sum(by_day.values()), 2),
+    }
+
+
 def run_push(horizon_days: int = DEFAULT_FORECAST_DAYS) -> dict:
     daily    = fetch_daily_sales(history_weeks=DEFAULT_HISTORY_WEEKS)
     events   = fetch_events(horizon_days=horizon_days + 60)
@@ -40,13 +85,15 @@ def run_push(horizon_days: int = DEFAULT_FORECAST_DAYS) -> dict:
     results, last_date, _ = build_forecasts(daily, horizon_days, events, weather)
     push_to_supabase(results)
 
-    total_rows = len(results)
+    today_iso = date.today().isoformat()
     return {
-        "status":        "ok",
-        "generated_at":  date.today().isoformat(),
+        "status":          "ok",
+        "generated_at":    today_iso,
         "history_through": str(last_date),
-        "rows_written":  total_rows,
-        "horizon_days":  horizon_days,
+        "rows_written":    len(results),
+        "horizon_days":    horizon_days,
+        "uplift_computed": _uplift_summary(results),
+        "uplift_stored":   _verify_stored_uplift(today_iso),
     }
 
 

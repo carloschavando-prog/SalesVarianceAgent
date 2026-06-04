@@ -733,12 +733,18 @@ def save_json(results: list, last_date, events: dict, weather: dict,
 def push_to_supabase(results: list):
     rows = [
         {
-            "forecast_date":       r["forecast_date"],
-            "category":            r["category"],
-            "predicted_net_sales": r["predicted"],
-            "lower_80":            r["lower_80"],
-            "upper_80":            r["upper_80"],
-            "model_version":       MODEL_VERSION,
+            "forecast_date":  r["forecast_date"],
+            "category":       r["category"],
+            "predicted":      r["predicted"],
+            "lower_80":       r["lower_80"],
+            "upper_80":       r["upper_80"],
+            "event_guests":   r.get("event_guests", 0.0),
+            "event_uplift":   r.get("event_uplift", 0.0),
+            "holiday_name":   r.get("holiday_name"),
+            "holiday_mult":   r.get("holiday_mult", 1.0),
+            "weather_mult":   r.get("weather_mult", 1.0),
+            "day_closed":     r.get("day_closed", False),
+            "model_version":  MODEL_VERSION,
         }
         for r in results
     ]
