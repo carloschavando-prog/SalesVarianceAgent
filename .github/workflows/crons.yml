@@ -2,14 +2,15 @@ name: Daily Cron Jobs
 
 on:
   schedule:
-    # All times UTC — same schedule as the old vercel.json crons
-    - cron: '0 8 * * *'   # weather_fetch      — 4:00 AM ET
-    - cron: '0 9 * * *'   # daily_fetch         — 5:00 AM ET
-    - cron: '0 10 * * *'  # labor_fetch         — 6:00 AM ET
-    - cron: '0 11 * * *'  # tripleseat_fetch    — 7:00 AM ET
-    - cron: '0 12 * * *'  # forecast_push       — 8:00 AM ET
-    - cron: '0 13 * * *'  # revenue_report      — 9:00 AM ET
-  workflow_dispatch:       # allow manual trigger from GitHub UI
+    # Scheduled 3 hours early to absorb GitHub Actions delay (typically 1-3h)
+    # Target ready-by times in ET shown in comments
+    - cron: '0 5 * * *'   # daily_fetch      — ready by ~5 AM ET
+    - cron: '0 6 * * *'   # weather_fetch    — ready by ~6 AM ET
+    - cron: '0 7 * * *'   # labor_fetch      — ready by ~7 AM ET
+    - cron: '0 8 * * *'   # tripleseat_fetch — ready by ~8 AM ET
+    - cron: '0 9 * * *'   # forecast_push    — ready by ~9 AM ET
+    - cron: '0 10 * * *'  # revenue_report   — ready by ~10 AM ET
+  workflow_dispatch:       # manual trigger from GitHub UI
     inputs:
       endpoint:
         description: 'Endpoint to run (e.g. daily_fetch)'
@@ -23,18 +24,8 @@ env:
   CRON_SECRET: ${{ secrets.CRON_SECRET }}
 
 jobs:
-  weather_fetch:
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 8 * * *'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger weather_fetch
-        run: |
-          curl -sf -H "authorization: Bearer $CRON_SECRET" \
-            "$BASE_URL/api/weather_fetch" \
-            && echo "weather_fetch OK" || echo "weather_fetch FAILED"
-
   daily_fetch:
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 9 * * *'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger daily_fetch
@@ -47,8 +38,18 @@ jobs:
             "$BASE_URL/api/daily_fetch$DATE_PARAM" \
             && echo "daily_fetch OK" || echo "daily_fetch FAILED"
 
+  weather_fetch:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 6 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger weather_fetch
+        run: |
+          curl -sf -H "authorization: Bearer $CRON_SECRET" \
+            "$BASE_URL/api/weather_fetch" \
+            && echo "weather_fetch OK" || echo "weather_fetch FAILED"
+
   labor_fetch:
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 * * *'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 7 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger labor_fetch
@@ -58,7 +59,7 @@ jobs:
             && echo "labor_fetch OK" || echo "labor_fetch FAILED"
 
   tripleseat_fetch:
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 11 * * *'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 8 * * *'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -69,7 +70,7 @@ jobs:
             && echo "tripleseat_fetch OK" || echo "tripleseat_fetch FAILED"
 
   forecast_push:
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 12 * * *'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 9 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger forecast_push
@@ -79,7 +80,7 @@ jobs:
             && echo "forecast_push OK" || echo "forecast_push FAILED"
 
   revenue_report:
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 13 * * *'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger revenue_report
