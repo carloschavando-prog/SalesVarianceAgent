@@ -337,13 +337,12 @@ def run() -> str:
     supa_upsert("ts_bookings", bookings)
 
     # Events — must come after bookings (FK constraint).
-    # transform_event may fetch a BEO document per event; small delay prevents
-    # hammering the Tripleseat portal on large syncs.
+    # No per-event sleep here: most events resolve food/bev from category_totals
+    # (no HTTP call), so a blanket 0.2s sleep on 1700+ events exceeded the
+    # Vercel 300s max duration. BEO fetches that DO hit HTTP have their own
+    # 20s timeout inside compute_food_bev.
     raw_events = fetch_all_pages(token, "events")
-    events = []
-    for e in raw_events:
-        events.append(transform_event(e))
-        time.sleep(0.2)
+    events = [transform_event(e) for e in raw_events]
     supa_upsert("ts_events", events)
 
     # Leads
